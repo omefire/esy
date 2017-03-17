@@ -114,12 +114,15 @@ builtInYarn() {
 	node $SCRIPTDIR/yarn.js $@ --cache-folder $ESY__YARN_CACHE_DIR
 }
 
-if [ "$1" == "build" ] || [ "$1" == "build-shell" ] || [ "$1" == "clean" ]; then
+if [ "$1" == "build-shell" ] || [ "$1" == "clean" ]; then
   builtInEject
   make -j -s -f "$EJECT_PATH/Makefile" "$1"
 
 elif [ "$1" == "build-eject" ]; then
   builtInEject
+
+elif [ "$1" == "build" ]; then
+  builtIn build
 
 elif [ "$1" == "shell" ]; then
   ensureEnvEjected
