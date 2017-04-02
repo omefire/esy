@@ -96,9 +96,33 @@ _esy-perform-build () {
 
 esy-build () {
   if [ "$esy_build__source_type" == "local" ]; then
+    # Check if anything changed since the last build
+    # If anything has changed, go ahead with the rebuild
+    # If nothing has changed, skip the rebuild
+    echo "esy-build() source-type=local: "
+    doesHashExist=$(node doesHashExist.js "$cur__root")
+    if [ "$doesHashExist" == "true" ]; then
+        oldHash=$(node getOldHash.js "$cur__root")
+        newHash=$(node computeHash.js "$cur__root")
+        if [ "$oldHash" == "$newHash" ]; then
+            return
+        fi
+    fi
+    #  if(doesHashExist() && getHashForFolder(srcFolder) === getLastBuildHash()) {
+    #     return; # stop the computation      
+    #  }
+    echo "CURRENT ROOT: "
+    echo $cur__root
     esy-clean
     _esy-perform-build
+    # Hash src folder & files and save it somewhere
+    # computeLastBuildHash & Save()
+    # do this step before or after _esy-perform-build ?
+    # ignore & abort if computing of last build hash fails
+    $(node saveHash.js "$cur__root" newHash)
   else
+      echo "CURRENT ROOT: -- "
+      echo $cur__root
     if [ ! -d "$esy_build__install" ]; then
       _esy-perform-build
     fi
