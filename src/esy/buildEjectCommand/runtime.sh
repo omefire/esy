@@ -94,32 +94,48 @@ _esy-perform-build () {
 
 }
 
+# Example usage: compute-hash(folder-whose-hash-we-want)
+compute-hash() {
+
+    hash="UNKNOWN"
+
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        hash=$(find -s $1 -type f -exec md5sum {} \; | md5sum)
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        hash=$(find -s $1 -type f -exec md5 {} \; | md5)
+    fi
+
+    return hash
+}
+
 esy-build () {
   if [ "$esy_build__source_type" == "local" ]; then
-    # Check if anything changed since the last build
-    # If anything has changed, go ahead with the rebuild
-    # If nothing has changed, skip the rebuild
+  
+
     echo "esy-build() source-type=local: "
-    doesHashExist=$(node doesHashExist.js "$cur__root")
-    if [ "$doesHashExist" == "true" ]; then
-        oldHash=$(node getOldHash.js "$cur__root")
-        newHash=$(node computeHash.js "$cur__root")
-        if [ "$oldHash" == "$newHash" ]; then
+
+    # ToDO: If we are dealing with Windows or a platform different from Linux or Mac OSX, we should just always recompile (?)
+    # ToDO: Maybe handle the `cygwin` case
+    # ToDO: Make sure that all tools use are available across all *nix systems
+    hashFile="$cur__root/.esy_hash"
+    if [ -f "$hashFile" ]; then
+        oldHash="`cat $hashFile`"
+        newHash="`compute-hash $cur__root`"
+        if [ "$oldHash" ==  "$newHash" ]; then
             return
         fi
+    elif
+        touch "$hashFile"
     fi
-    #  if(doesHashExist() && getHashForFolder(srcFolder) === getLastBuildHash()) {
-    #     return; # stop the computation      
-    #  }
+
     echo "CURRENT ROOT: "
     echo $cur__root
+
     esy-clean
     _esy-perform-build
-    # Hash src folder & files and save it somewhere
-    # computeLastBuildHash & Save()
-    # do this step before or after _esy-perform-build ?
-    # ignore & abort if computing of last build hash fails
-    $(node saveHash.js "$cur__root" newHash)
+
+    hash="`compute-hash $cur__root`"
+    echo "$hash" >> "$hashFile"
   else
       echo "CURRENT ROOT: -- "
       echo $cur__root
